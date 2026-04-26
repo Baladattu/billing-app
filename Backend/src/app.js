@@ -2,6 +2,7 @@ const express = require('express');
 const { error } = require('./utils/response');
 const AppError = require("./utils/AppError");
 const errorMiddleware = require('./middlewares/errorMiddleware');
+const apiRoutes = require("./routes");
 const morgan = require("morgan");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -62,6 +63,8 @@ app.get('/', (req, res) => {
 app.get('/error', (req, res) => {
     return error(res, "Something Failed", 500);
 });
+
+app.use("/api/v1", apiRoutes);
 
 app.use((req, res, next) => {
     next(new AppError(`Route not found: ${req.originalUrl}`, 404));

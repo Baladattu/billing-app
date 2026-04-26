@@ -32,10 +32,12 @@ const env = {
     keepAliveTimeoutMs: parseNumber(process.env.SERVER_KEEP_ALIVE_TIMEOUT_MS, 65000),
     headersTimeoutMs: parseNumber(process.env.SERVER_HEADERS_TIMEOUT_MS, 66000),
     requestTimeoutMs: parseNumber(process.env.SERVER_REQUEST_TIMEOUT_MS, 30000),
+    jwtSecret: process.env.JWT_SECRET || "",
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
 };
 
 const validateEnv = () => {
-    const requiredVars = ["MONGO_URI"];
+    const requiredVars = ["MONGO_URI", "JWT_SECRET"];
     const missingVars = requiredVars.filter((key) => !process.env[key]);
 
     if (missingVars.length > 0) {
