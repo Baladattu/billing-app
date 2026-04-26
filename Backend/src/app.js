@@ -1,22 +1,56 @@
 const express = require('express');
 const { error } = require('./utils/response');
+const AppError = require("./utils/AppError");
 const errorMiddleware = require('./middlewares/errorMiddleware');
 const morgan = require("morgan");
 const cors = require("cors");
 const helmet = require("helmet");
+const mongoose = require("mongoose");
+const { env } = require("./config/env");
 
 const app = express();
 
-app.use(express.json());
-app.use(morgan("dev"));
-app.use(cors());
+app.disable("x-powered-by");
+app.set("trust proxy", env.trustProxy);
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+
+        if (env.corsAllowedOrigins.length === 0 || env.corsAllowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new AppError("Not allowed by CORS", 403));
+    },
+    credentials: env.corsAllowCredentials,
+};
+
+app.use(express.json({ limit: env.jsonBodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: env.jsonBodyLimit }));
+app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
+app.use(cors(corsOptions));
 app.use(helmet());
-app.use(errorMiddleware);
 
 app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'OK',
+    const readyStateMap = {
+        0: "disconnected",
+        1: "connected",
+        2: "connecting",
+        3: "disconnecting",
+    };
+
+    const dbState = readyStateMap[mongoose.connection.readyState] || "unknown";
+    const isDbReady = mongoose.connection.readyState === 1;
+
+    res.status(isDbReady ? 200 : 503).json({
+        status: isDbReady ? 'OK' : "DEGRADED",
         message: 'Server is running',
+        database: dbState,
         timestamp: new Date().toISOString()
     });
 });
@@ -27,6 +61,12 @@ app.get('/', (req, res) => {
 
 app.get('/error', (req, res) => {
     return error(res, "Something Failed", 500);
-})
+});
+
+app.use((req, res, next) => {
+    next(new AppError(`Route not found: ${req.originalUrl}`, 404));
+});
+
+app.use(errorMiddleware);
 
 module.exports = app;
