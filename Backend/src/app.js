@@ -3,6 +3,7 @@ const { error } = require('./utils/response');
 const AppError = require("./utils/AppError");
 const errorMiddleware = require('./middlewares/errorMiddleware');
 const apiRoutes = require("./routes");
+const { swaggerUi, swaggerSpec } = require("./docs/swagger");
 const morgan = require("morgan");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -63,6 +64,11 @@ app.get('/', (req, res) => {
 app.get('/error', (req, res) => {
     return error(res, "Something Failed", 500);
 });
+
+app.get("/api-docs.json", (req, res) => {
+    res.json(swaggerSpec);
+});
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
 
 app.use("/api/v1", apiRoutes);
 

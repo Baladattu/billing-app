@@ -26,6 +26,14 @@ describe("App routes", () => {
         expect(response.body.success).toBe(false);
     });
 
+    it("GET /api-docs.json should return OpenAPI spec", async () => {
+        const response = await request(app).get("/api-docs.json");
+
+        expect(response.status).toBe(200);
+        expect(response.body.openapi).toBe("3.0.3");
+        expect(response.body.paths["/api/v1/auth/login"]).toBeDefined();
+    });
+
     it("POST /api/v1/auth/login should validate required fields", async () => {
         const response = await request(app).post("/api/v1/auth/login").send({});
 
